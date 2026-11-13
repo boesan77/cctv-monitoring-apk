@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CCTV Monitoring</title>
+
+<!-- HLS JS -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#111;
+    color:#fff;
+}
+
+/* HEADER */
+header{
+    background:#1e1e1e;
+    padding:15px;
+    position:sticky;
+    top:0;
+    z-index:999;
+    border-bottom:1px solid #333;
+}
+
+.header-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+}
+
+.title{
+    font-size:24px;
+    font-weight:bold;
+}
+
+/* DESKTOP MENU */
+.desktop-menu{
+    display:flex;
+    gap:10px;
+}
+
+.desktop-menu button{
+    padding:10px 16px;
+    border:none;
+    border-radius:8px;
+    background:#333;
+    color:#fff;
+    cursor:pointer;
+    transition:0.3s;
+    font-size:14px;
+}
+
+.desktop-menu button:hover{
+    background:#555;
+}
+
+.desktop-menu button.active{
+    background:#0d6efd;
+}
+
+/* MOBILE DROPDOWN */
+.mobile-menu{
+    display:none;
+    margin-top:10px;
+}
+
+.mobile-menu select{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:#222;
+    color:#fff;
+    font-size:16px;
+}
+
+/* CCTV GRID */
+.container{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:12px;
+    padding:12px;
+}
+
+.camera-box{
+    background:#1c1c1c;
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid #333;
+}
+
+.camera-title{
+    background:#222;
+    padding:10px;
+    text-align:center;
+    font-weight:bold;
+    font-size:15px;
+}
+
+video,
+iframe{
+    width:100%;
+    height:240px;
+    border:none;
+    background:#000;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+    .title{
+        font-size:20px;
+    }
+    .desktop-menu{
+        display:none;
+    }
+    .mobile-menu{
+        display:block;
+    }
+    .container{
+        grid-template-columns:1fr;
+    }
+    video,
+    iframe{
+        height:220px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="header-top">
+        <div class="title">CCTV Monitoring</div>
+        <!-- MENU DESKTOP -->
+        <div class="desktop-menu">
+            <button class="active" onclick="loadPage('lantai1', this)">Lantai 1</button>
+            <button onclick="loadPage('lantai2', this)">Lantai 2</button>
+            <button onclick="loadPage('lantai3', this)">Lantai 3</button>
+            <button onclick="loadPage('outdoor', this)">Outdoor</button>
+        </div>
+    </div>
+
+    <!-- MENU MOBILE -->
+    <div class="mobile-menu">
+        <select id="mobileSelect" onchange="changeMobilePage()">
+            <option value="lantai1">Lantai 1</option>
+            <option value="lantai2">Lantai 2</option>
+            <option value="lantai3">Lantai 3</option>
+            <option value="outdoor">Outdoor</option>
+        </select>
+    </div>
+</header>
+
+<!-- CCTV -->
+<div class="container" id="cctvContainer"></div>
+
+<script>
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const pages = {
+    lantai1: [
+        { name:"CAM 1", hls:"http://123.253.78.116:8888/cam1/index.m3u8", webrtc:"http://123.253.78.116:8889/cam1/" },
+        { name:"CAM 2", hls:"http://123.253.78.116:8888/cam2/index.m3u8", webrtc:"http://123.253.78.116:8889/cam2/" },
+        { name:"CAM 3", hls:"http://123.253.78.116:8888/cam3/index.m3u8", webrtc:"http://123.253.78.116:8889/cam3/" },
+        { name:"CAM 4", hls:"http://123.253.78.116:8888/cam4/index.m3u8", webrtc:"http://123.253.78.116:8889/cam4/" },
+        { name:"CAM 5", hls:"http://123.253.78.116:8888/cam5/index.m3u8", webrtc:"http://123.253.78.116:8889/cam5/" }
+    ],
+    lantai2: [
+        { name:"CAM 6", hls:"http://123.253.78.116:8888/cam6/index.m3u8", webrtc:"http://123.253.78.116:8889/cam6/" },
+        { name:"CAM 7", hls:"http://123.253.78.116:8888/cam7/index.m3u8", webrtc:"http://123.253.78.116:8889/cam7/" },
+        { name:"CAM 8", hls:"http://123.253.78.116:8888/cam8/index.m3u8", webrtc:"http://123.253.78.116:8889/cam8/" },
+        { name:"CAM 9", hls:"http://123.253.78.116:8888/cam9/index.m3u8", webrtc:"http://123.253.78.116:8889/cam9/" },
+        { name:"CAM 10", hls:"http://123.253.78.116:8888/cam10/index.m3u8", webrtc:"http://123.253.78.116:8889/cam10/" }
+    ],
+    lantai3: [
+        { name:"CAM 11", hls:"http://123.253.78.116:8888/cam11/index.m3u8", webrtc:"http://123.253.78.116:8889/cam11/" },
+        { name:"CAM 12", hls:"http://123.253.78.116:8888/cam12/index.m3u8", webrtc:"http://123.253.78.116:8889/cam12/" },
+        { name:"CAM 13", hls:"http://123.253.78.116:8888/cam13/index.m3u8", webrtc:"http://123.253.78.116:8889/cam13/" },
+        { name:"CAM 14", hls:"http://123.253.78.116:8888/cam14/index.m3u8", webrtc:"http://123.253.78.116:8889/cam14/" },
+        { name:"CAM 15", hls:"http://123.253.78.116:8888/cam15/index.m3u8", webrtc:"http://123.253.78.116:8889/cam15/" },
+        { name:"CAM 16", hls:"http://123.253.78.116:8888/cam16/index.m3u8", webrtc:"http://123.253.78.116:8889/cam16/" },
+        { name:"CAM 17", hls:"http://123.253.78.116:8888/cam17/index.m3u8", webrtc:"http://123.253.78.116:8889/cam17/" }
+    ],
+    outdoor: [
+        { name:"CAM 18", hls:"http://123.253.78.116:8888/cam18/index.m3u8", webrtc:"http://123.253.78.116:8889/cam18/" },
+        { name:"CAM 19", hls:"http://123.253.78.116:8888/cam19/index.m3u8", webrtc:"http://123.253.78.116:8889/cam19/" },
+        { name:"CAM 20", hls:"http://123.253.78.116:8888/cam20/index.m3u8", webrtc:"http://123.253.78.116:8889/cam20/" },
+        { name:"CAM 21", hls:"http://123.253.78.116:8888/cam21/index.m3u8", webrtc:"http://123.253.78.116:8889/cam21/" }
+    ]
+};
+
+const container = document.getElementById("cctvContainer");
+let activeHlsInstances = [];
+
+function loadPage(page, button = null){
+    // Hentikan stream sebelumnya agar RAM Android 9 tidak penuh
+    activeHlsInstances.forEach(hls => hls.destroy());
+    activeHlsInstances = [];
+    container.innerHTML = "";
+
+    if(button){
+        document.querySelectorAll(".desktop-menu button").forEach(btn=>{
+            btn.classList.remove("active");
+        });
+        button.classList.add("active");
+    }
+
+    document.getElementById("mobileSelect").value = page;
+    const cameras = pages[page];
+
+    cameras.forEach(cam => {
+        const box = document.createElement("div");
+        box.className = "camera-box";
+
+        const title = document.createElement("div");
+        title.className = "camera-title";
+        title.innerText = cam.name;
+        box.appendChild(title);
+
+        if(isMobile){
+            const video = document.createElement("video");
+            video.autoplay = true;
+            video.muted = true;
+            video.controls = true;
+            video.playsInline = true;
+
+            if(typeof Hls !== 'undefined' && Hls.isSupported()){
+                const hls = new Hls({
+                    liveSyncDurationCount:3,
+                    maxBufferLength:30
+                });
+                hls.loadSource(cam.hls);
+                hls.attachMedia(video);
+                activeHlsInstances.push(hls);
+            }else if(video.canPlayType('application/vnd.apple.mpegurl')){
+                video.src = cam.hls;
+            }
+            box.appendChild(video);
+        }else{
+            const iframe = document.createElement("iframe");
+            iframe.src = cam.webrtc;
+            iframe.allowFullscreen = true;
+            box.appendChild(iframe);
+        }
+        container.appendChild(box);
+    });
+}
+
+function changeMobilePage(){
+    const selected = document.getElementById("mobileSelect").value;
+    loadPage(selected);
+}
+
+loadPage('lantai1');
+</script>
+</body>
+</html>
